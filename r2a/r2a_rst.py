@@ -11,6 +11,7 @@ class R2A_RST(IR2A):
         self.qi = []                    # lista de qualidades
         self.request_time = 0
         self.last_fetch = 1             # tempo que durou para ser feito o download do último segmento (sft)
+        self.quality_level = 0
         pass
 
     def handle_xml_request(self, msg):
@@ -48,19 +49,19 @@ class R2A_RST(IR2A):
 
         qi_tuple = self.whiteboard.get_playback_qi()
         if len(qi_tuple) == 0:
-            quality_level = 1
+            self.quality_level = 0
         else:
-            quality_level = qi_tuple[-1][1]
-            if quality_level < 19:                  # calcula o epsilon
-                epsilon = (self.qi[quality_level + 1] - self.qi[quality_level]) / self.qi[quality_level]
+            self.quality_level = qi_tuple[-1][1]
+            if self.quality_level < 19:                  # calcula o epsilon
+                epsilon = (self.qi[self.quality_level + 1] - self.qi[self.quality_level]) / self.qi[self.quality_level]
             else:
                 epsilon = 99999
         #print("EPSILON: ", epsilon)
 
         # Verificar se podem ser constantes
-        buf_min = 3
-        buf_reduce = 8
-        buf_safety = 12
+        buf_min = 15
+        buf_reduce = 30
+        buf_safety = 45
         gamma = 0.8
 
         buffer_tuple = self.whiteboard.get_playback_buffer_size()   # tupla do tempo do buffer analisado e seu tamanho
@@ -73,41 +74,30 @@ class R2A_RST(IR2A):
                 print("B")
                 if mi >= 1:
                     print("C")
-                    if quality_level == 0:
-                        msg.add_quality_id(self.qi[quality_level])
-                    else:
-                        msg.add_quality_id(self.qi[quality_level - 1])
+                    if self.quality_level > 0:
+                        self.quality_level -= 1
                 else:
                     print("D")
-                    index = -1
-                    for i in self.qi:
-                        if i < self.qi[quality_level] * mi:
-                            index += 1
-                    if index >= 0:
-                        msg.add_quality_id(self.qi[index])
-                    else:
-                        msg.add_quality_id(self.qi[0])
+                    index = 0
+                    for i in range(0, len(self.qi)):
+                        if self.qi[i] < self.qi[self.quality_level] * mi:
+                            index = i
+                    self.quality_level = index
             
             elif mi < gamma and buf_c < buf_reduce:
                 print("E")
-                if quality_level == 0:
-                    msg.add_quality_id(self.qi[quality_level])
-                else:
-                    msg.add_quality_id(self.qi[quality_level - 1])
+                if self.quality_level > 0:
+                    self.quality_level -= 1
             
             elif mi > (1 + epsilon) and buf_c > buf_safety:
                 print("F")
-                if quality_level == 19:
-                    msg.add_quality_id(self.qi[quality_level])
-                else:
-                    msg.add_quality_id(self.qi[quality_level + 1])
+                if self.quality_level < 19:
+                    self.quality_level += 1
             
-            else:
-                print("G")
-                msg.add_quality_id(self.qi[quality_level])
+            msg.add_quality_id(self.qi[self.quality_level])
 
         else:
-            print("H")
+            print("G")
             msg.add_quality_id(self.qi[0])
 
         self.send_down(msg)
