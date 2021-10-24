@@ -30,7 +30,7 @@ class R2A_RST(IR2A):
 
     def handle_segment_size_request(self, msg):
         self.request_time = time.perf_counter()     # recebe o tempo do pedido
-        print("QUALITY LEVEL LIST: ",self.quality_level)
+        #print("QUALITY LEVEL LIST: ",self.quality_level)
 
         mi = 1/self.last_fetch                      # mi = msd/sft (considerando que a duração do segmento é sempre 1)
         epsilon = 0
