@@ -1,3 +1,8 @@
+# Transmissao de Dados - Turma A
+# Algoritmo Relative Smoothed Throughput
+# Eduardo de Souza Felix de Almeida - 170102254
+# Pedro Vitor Valença Mizuno - 170043665
+
 from xml.etree.ElementTree import parse
 from r2a.ir2a import IR2A
 from player.parser import *
@@ -14,14 +19,12 @@ class R2A_RST(IR2A):
         pass
 
     def handle_xml_request(self, msg):
-        #self.request_time = time.perf_counter()
         self.send_down(msg)
 
     def handle_xml_response(self, msg):
 
         parsed_mpd = parse_mpd(msg.get_payload())   # recebe o payload e faz o parsing
         self.qi = parsed_mpd.get_qi()               # recebe a lista de qualidades
-        #print(self.qi)
 
         self.send_up(msg)
 
@@ -49,17 +52,17 @@ class R2A_RST(IR2A):
         buffer_tuple = self.whiteboard.get_playback_buffer_size()   # tupla do tempo do buffer analisado e seu tamanho
 
         if len(buffer_tuple) > 0:
-            print("A")
+            #print("A")
             buf_c = buffer_tuple[-1][1]     # tamanho atual do buffer
 
             if buf_c < buf_min:
-                print("B")
+                #print("B")
                 if mi >= 1:
-                    print("C")
+                    #print("C")
                     if quality > 0:
                         quality -= 1
                 else:
-                    print("D")
+                    #print("D")
                     index = 0
                     for i in range(0, len(self.qi)):
                         if self.qi[i] < self.qi[quality] * mi:
@@ -67,21 +70,21 @@ class R2A_RST(IR2A):
                     quality = index
             
             elif mi < gamma and buf_c < buf_reduce:
-                print("E")
+                #print("E")
                 if quality > 0:
                     quality -= 1
             
             elif mi > (1 + epsilon) and buf_c > buf_safety:
-                print("F")
+                #print("F")
                 if quality < 19:
-                    print("G")
+                    #print("G")
                     quality += 1
 
             msg.add_quality_id(self.qi[quality])
             self.quality_level.append(quality)
 
         else:
-            print("H")
+            #print("H")
             msg.add_quality_id(self.qi[0])
             self.quality_level.append(quality)
 
